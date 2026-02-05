@@ -114,7 +114,7 @@ class Loans extends CommonDBTM
             $values = [$field => $values];
         }
 
-        if ($field === 'glpi_item_id') {
+        if ($field === 'glpi_name' || $field === 'glpi_item_id') {
             return self::displayItem($values);
         }
 
@@ -163,6 +163,7 @@ class Loans extends CommonDBTM
             'field'    => 'id',
             'name'     => __('ID'),
             'datatype' => 'numeric',
+            'itemtype' => self::class,
         ];
 
         $options[] = [
@@ -170,7 +171,8 @@ class Loans extends CommonDBTM
             'table'    => self::getTable(),
             'field'    => 'glpi_item_type',
             'name'     => __('Item Type'),
-            'datatype' => '',
+            'datatype' => 'itemtype',
+            'itemtype' => self::class,
         ];
 
         $options[] = [
@@ -178,7 +180,8 @@ class Loans extends CommonDBTM
             'table'             => self::getTable(),
             'field'             => 'glpi_name',
             'name'              => __('Item'),
-            'datatype'          => 'text',
+            'datatype'          => 'specific',
+            'itemtype'          => self::class,
         ];
 
         $options[] = [
@@ -187,7 +190,8 @@ class Loans extends CommonDBTM
             'field'    => 'name',
             'linkfield'=> 'loan_user_id',
             'name'     => __('Loaned to User'),
-            'datatype' => 'specific',
+            'datatype' => 'dropdown',
+            'itemtype' => 'User',
         ];
 
         $options[] = [
@@ -196,7 +200,8 @@ class Loans extends CommonDBTM
             'field'    => 'name',
             'linkfield'=> 'loan_submitted_by_id',
             'name'     => __('Loan Submitted by'),
-            'datatype' => 'specific',
+            'datatype' => 'dropdown',
+            'itemtype' => 'User',
         ];
 
         $options[] = [
@@ -210,6 +215,7 @@ class Loans extends CommonDBTM
             'field'    => 'date_loaned_created',
             'name'     => __('Loan Date'),
             'datatype' => 'datetime',
+            'itemtype' => self::class,
         ];
 
         $options[] = [
@@ -218,6 +224,7 @@ class Loans extends CommonDBTM
             'field'    => 'date_loaned_returned',
             'name'     => __('Returned Date'),
             'datatype' => 'datetime',
+            'itemtype' => self::class,
         ];
 
         $options[] = [
@@ -226,6 +233,7 @@ class Loans extends CommonDBTM
             'field'    => 'return_by_date',
             'name'     => __('Loan Expiration Date'),
             'datatype' => 'datetime',
+            'itemtype' => self::class,
         ];
 
         $options[] = [
@@ -234,6 +242,7 @@ class Loans extends CommonDBTM
             'field'    => 'confirmed_by_user',
             'name'     => __('Confirmed by User'),
             'datatype' => 'bool',
+            'itemtype' => self::class,
         ];
 
         $options[] = [
@@ -242,6 +251,7 @@ class Loans extends CommonDBTM
             'field'    => 'loan_returned',
             'name'     => __('Returned'),
             'datatype' => 'bool',
+            'itemtype' => self::class,
         ];
 
         $options[] = [
@@ -251,6 +261,7 @@ class Loans extends CommonDBTM
             'linkfield'=> 'entities_id',
             'name'     => __('Entity'),
             'datatype' => 'dropdown',
+            'itemtype' => 'Entity',
         ];
 
         $options[] = [
@@ -259,6 +270,7 @@ class Loans extends CommonDBTM
             'field'    => 'send_reminder',
             'name'     => __('Reminder'),
             'datatype' => 'bool',
+            'itemtype' => self::class,
         ];
 
         $options[] = [
@@ -267,7 +279,8 @@ class Loans extends CommonDBTM
             'field'    => 'name',
             'linkfield'=> 'loan_returned_by_id',
             'name'     => __('Loan Returned by'),
-            'datatype' => 'text',
+            'datatype' => 'dropdown',
+            'itemtype' => 'User',
         ];
 
         $options[] = [
@@ -276,6 +289,7 @@ class Loans extends CommonDBTM
             'field'    => 'glpi_otherserial',
             'name'     => __('Inventory Number'),
             'datatype' => 'text',
+            'itemtype' => self::class,
         ];
 
         $options[] = [
@@ -284,6 +298,16 @@ class Loans extends CommonDBTM
             'field'    => 'ask_to_confirm',
             'name'     => __('Ask to Confirm'),
             'datatype' => 'bool',
+            'itemtype' => self::class,
+        ];
+
+        $options[] = [
+            'id'       => 410,
+            'table'    => self::getTable(),
+            'field'    => 'glpi_item_id',
+            'name'     => __('Item ID'),
+            'datatype' => 'numeric',
+            'itemtype' => self::class,
         ];
 
         return $options;
