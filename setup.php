@@ -41,7 +41,7 @@ define('PLUGIN_ITEMLOANS_VERSION', '0.9.2');
 // Minimal GLPI version, inclusive
 define("PLUGIN_ITEMLOANS_MIN_GLPI_VERSION", "10.0.0");
 // Maximum GLPI version, exclusive
-define("PLUGIN_ITEMLOANS_MAX_GLPI_VERSION", "10.0.99");
+define("PLUGIN_ITEMLOANS_MAX_GLPI_VERSION", "11.0.99");
 
 /**
  * Init hooks of the plugin.
@@ -98,7 +98,7 @@ function plugin_version_itemloans()
     return [
         'name'           => __('Item Loan', 'itemloans'),
         'version'        => PLUGIN_ITEMLOANS_VERSION,
-        'author'         => '<a href="http://www.gameloft.com">Terrell Eaton</a>',
+        'author'         => 'Terrell Eaton',
         'license'        => 'GPLv3',
         'homepage'       => '',
         'requirements'   => [
