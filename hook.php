@@ -75,7 +75,7 @@ function plugin_itemloans_install()
                 PRIMARY KEY (`id`)) ENGINE = InnoDB
                 DEFAULT CHARSET={$default_charset}
                 COLLATE={$default_collation}";
-        $DB->queryOrDie($query, $DB->error());
+        $DB->doQueryOrDie($query, $DB->error());
     }
 
     //execute the whole migration
@@ -85,7 +85,7 @@ function plugin_itemloans_install()
     $table = Loans::getTable();
     if ($DB->tableExists($table) && !$DB->fieldExists($table, 'confirmation_sent')) {
         $query_add_col = "ALTER TABLE `$table` ADD `confirmation_sent` BOOLEAN NOT NULL DEFAULT FALSE AFTER `confirmed_by_user`;";
-        $DB->queryOrDie($query_add_col, $DB->error());
+        $DB->doQueryOrDie($query_add_col, $DB->error());
     }
 
     //add rights
@@ -118,46 +118,61 @@ function plugin_itemloans_install()
 
     foreach ($notification_definitions as $def) {
         $tpl_id = null;
-        $query_tpl = "SELECT `id` FROM `glpi_notificationtemplates` WHERE `name` = '{$def['name']}'";
-        $result_tpl = $DB->query($query_tpl);
-        if ($DB->numrows($result_tpl) > 0) {
-            $tpl_id = $DB->result($result_tpl, 0, 'id');
+        $tpl_iterator = $DB->request([
+            'SELECT' => 'id',
+            'FROM'   => 'glpi_notificationtemplates',
+            'WHERE'  => ['name' => $def['name']],
+        ]);
+        if (count($tpl_iterator) > 0) {
+            $tpl_id = $tpl_iterator->current()['id'];
         } else {
-            $query_insert_tpl = "INSERT INTO `glpi_notificationtemplates` (`name`, `itemtype`, `date_mod`)
-                                 VALUES ('{$def['name']}', '$itemtype', NOW())";
-            $DB->query($query_insert_tpl);
-            $result_tpl_new = $DB->query($query_tpl);
-            $tpl_id = $DB->result($result_tpl_new, 0, 'id');
+            $DB->insert('glpi_notificationtemplates', [
+                'name'     => $def['name'],
+                'itemtype' => $itemtype,
+                'date_mod' => new \QueryExpression('NOW()'),
+            ]);
+            $tpl_id = $DB->insertId();
 
             if ($tpl_id) {
-                $query_insert_trans = "INSERT INTO `glpi_notificationtemplatetranslations` 
-                                        (`notificationtemplates_id`, `subject`, `content_text`, `content_html`)
-                                        VALUES ($tpl_id, '{$DB->escape($def['subject'])}', '', '{$DB->escape($def['body'])}')";
-                $DB->query($query_insert_trans);
+                $DB->insert('glpi_notificationtemplatetranslations', [
+                    'notificationtemplates_id' => $tpl_id,
+                    'subject'                  => $def['subject'],
+                    'content_text'             => '',
+                    'content_html'             => $def['body'],
+                ]);
             }
         }
 
         if ($tpl_id) {
             $notif_id = null;
-            $query_notif = "SELECT `id` FROM `glpi_notifications` WHERE `name` = '{$def['name']}'";
-            $result_notif = $DB->query($query_notif);
-            if ($DB->numrows($result_notif) > 0) {
-                $notif_id = $DB->result($result_notif, 0, 'id');
+            $notif_iterator = $DB->request([
+                'SELECT' => 'id',
+                'FROM'   => 'glpi_notifications',
+                'WHERE'  => ['name' => $def['name']],
+            ]);
+            if (count($notif_iterator) > 0) {
+                $notif_id = $notif_iterator->current()['id'];
             } else {
-                $query_insert_notif = "INSERT INTO `glpi_notifications` (`name`, `itemtype`, `event`, `is_active`)
-                                    VALUES ('{$def['name']}', '$itemtype', '{$def['event']}', 1)";
-                $DB->query($query_insert_notif);
-                $result_notif_new = $DB->query($query_notif);
-                $notif_id = $DB->result($result_notif_new, 0, 'id');
+                $DB->insert('glpi_notifications', [
+                    'name'      => $def['name'],
+                    'itemtype'  => $itemtype,
+                    'event'     => $def['event'],
+                    'is_active' => 1,
+                ]);
+                $notif_id = $DB->insertId();
 
                 if ($notif_id) {
-                    $query_insert_link = "INSERT INTO `glpi_notifications_notificationtemplates` (`notifications_id`, `notificationtemplates_id`, `mode`)
-                                        VALUES ($notif_id, $tpl_id, 'mailing')";
-                    $DB->query($query_insert_link);
+                    $DB->insert('glpi_notifications_notificationtemplates', [
+                        'notifications_id'         => $notif_id,
+                        'notificationtemplates_id' => $tpl_id,
+                        'mode'                     => 'mailing',
+                    ]);
 
-                    $query_insert_target = "INSERT INTO `glpi_notificationtargets` (`notifications_id`, `type`, `items_id`)
-                                            VALUES ($notif_id, " . \Notification::USER_TYPE . ", " . \GlpiPlugin\Itemloans\NotificationTargetLoans::LOAN_USER_RECIPIENT . ")";
-                    $DB->query($query_insert_target);
+                    $DB->insert('glpi_notificationtargets', [
+                        'notifications_id' => $notif_id,
+                        'type'             => \Notification::USER_TYPE,
+                        'items_id'         => \GlpiPlugin\Itemloans\NotificationTargetLoans::LOAN_USER_RECIPIENT,
+                    ]);
                 }
             }
         }
@@ -196,27 +211,29 @@ function plugin_itemloans_uninstall()
 
     $itemtype = 'GlpiPlugin\Itemloans\Loans';
 
-    $query_tpl = "SELECT `id` FROM `glpi_notificationtemplates` WHERE `itemtype` = '$itemtype'";
-    $result_tpl = $DB->query($query_tpl);
-    if ($DB->numrows($result_tpl) > 0) {
-        while ($row = $DB->fetchAssoc($result_tpl)) {
-            $tpl_id = $row['id'];
-            $DB->query("DELETE FROM `glpi_notificationtemplatetranslations` WHERE `notificationtemplates_id` = $tpl_id");
-            $DB->query("DELETE FROM `glpi_notifications_notificationtemplates` WHERE `notificationtemplates_id` = $tpl_id");
-        }
-        $DB->query("DELETE FROM `glpi_notificationtemplates` WHERE `itemtype` = '$itemtype'");
+    $tpl_iterator = $DB->request([
+        'SELECT' => 'id',
+        'FROM'   => 'glpi_notificationtemplates',
+        'WHERE'  => ['itemtype' => $itemtype],
+    ]);
+    foreach ($tpl_iterator as $row) {
+        $tpl_id = $row['id'];
+        $DB->delete('glpi_notificationtemplatetranslations', ['notificationtemplates_id' => $tpl_id]);
+        $DB->delete('glpi_notifications_notificationtemplates', ['notificationtemplates_id' => $tpl_id]);
     }
+    $DB->delete('glpi_notificationtemplates', ['itemtype' => $itemtype]);
 
-    $query_notif = "SELECT `id` FROM `glpi_notifications` WHERE `itemtype` = '$itemtype'";
-    $result_notif = $DB->query($query_notif);
-    if ($DB->numrows($result_notif) > 0) {
-        while ($row = $DB->fetchAssoc($result_notif)) {
-            $notif_id = $row['id'];
-            $DB->query("DELETE FROM `glpi_notificationtargets` WHERE `notifications_id` = $notif_id");
-            $DB->query("DELETE FROM `glpi_notifications_notificationtemplates` WHERE `notifications_id` = $notif_id");
-        }
-        $DB->query("DELETE FROM `glpi_notifications` WHERE `itemtype` = '$itemtype'");
+    $notif_iterator = $DB->request([
+        'SELECT' => 'id',
+        'FROM'   => 'glpi_notifications',
+        'WHERE'  => ['itemtype' => $itemtype],
+    ]);
+    foreach ($notif_iterator as $row) {
+        $notif_id = $row['id'];
+        $DB->delete('glpi_notificationtargets', ['notifications_id' => $notif_id]);
+        $DB->delete('glpi_notifications_notificationtemplates', ['notifications_id' => $notif_id]);
     }
+    $DB->delete('glpi_notifications', ['itemtype' => $itemtype]);
 
     //remove rights
     foreach (ItemLoans_Profile::getAllRights() as $right) {
