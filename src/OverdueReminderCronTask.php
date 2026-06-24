@@ -28,9 +28,16 @@ class OverdueReminderCronTask extends GlpiCronTask
         global $DB;
         $cron_status = 1;
 
-        $query = "SELECT `id` FROM " . Loans::getTable() . " WHERE `loan_returned` = 0 AND `return_by_date` < NOW() AND `send_reminder` = 1";
-        $result = $DB->query($query);
-        $num_overdue = $DB->numrows($result);
+        $iterator = $DB->request([
+            'SELECT' => 'id',
+            'FROM'   => Loans::getTable(),
+            'WHERE'  => [
+                'loan_returned'  => 0,
+                'return_by_date' => ['<', new \QueryExpression('NOW()')],
+                'send_reminder'  => 1,
+            ],
+        ]);
+        $num_overdue = count($iterator);
 
         if ($num_overdue > 0) {
             $template_name = 'Item Loan Overdue';
@@ -41,15 +48,19 @@ class OverdueReminderCronTask extends GlpiCronTask
             }
             $template_id = $notification_template->getID();
 
-            while ($data = $DB->fetchAssoc($result)) {
+            foreach ($iterator as $data) {
                 $loan = new Loans();
                 if ($loan->getFromDB($data['id'])) {
-                    $query_check = "SELECT COUNT(*) as count FROM `glpi_queuednotifications`
-                                    WHERE `itemtype` = '" . addslashes(Loans::class) . "'
-                                      AND `items_id` = " . $loan->getID() . "
-                                      AND `notificationtemplates_id` = " . $template_id;
-                    $res_check = $DB->query($query_check);
-                    if ($DB->fetchAssoc($res_check)['count'] == 0) {
+                    $check_iterator = $DB->request([
+                        'COUNT' => 'count',
+                        'FROM'  => 'glpi_queuednotifications',
+                        'WHERE' => [
+                            'itemtype'                 => Loans::class,
+                            'items_id'                 => $loan->getID(),
+                            'notificationtemplates_id' => $template_id,
+                        ],
+                    ]);
+                    if ($check_iterator->current()['count'] == 0) {
                         NotificationEvent::raiseEvent('overdue_loan', $loan, ['loan_id' => $loan->getID()]);
                     }
                 }

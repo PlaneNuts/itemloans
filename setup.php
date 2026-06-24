@@ -36,7 +36,7 @@ use Glpi\Plugin\Hooks;
 use GlpiPlugin\Itemloans\Profile as ItemLoans_Profile;
 use GlpiPlugin\Itemloans\NotificationTargetLoans;
 
-define('PLUGIN_ITEMLOANS_VERSION', '0.9.2');
+define('PLUGIN_ITEMLOANS_VERSION', '0.9.4');
 
 // Minimal GLPI version, inclusive
 define("PLUGIN_ITEMLOANS_MIN_GLPI_VERSION", "10.0.0");
