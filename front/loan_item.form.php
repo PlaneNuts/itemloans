@@ -8,6 +8,8 @@ use Entity;
 
 include ('../../../inc/includes.php');
 
+global $DB;
+
 if (!isset($_SESSION['loan_items'])) {
     $_SESSION['loan_items'] = [];
 }
@@ -50,7 +52,6 @@ if (isset($_POST["search_item"]) || isset($_SESSION['multiple_results'])) {
             if (isset($found['entities_id']) && !in_array($found['entities_id'], $allowed_entities)) {
                 Session::addMessageAfterRedirect(__('Item not in Active or Child Entity', 'itemloans'), true, ERROR);
             } else {
-                global $DB;
                 $loan_table = Loans::getTable();
                 $result = $DB->request(
                     $loan_table,

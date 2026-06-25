@@ -8,6 +8,8 @@ use Entity;
 
 include ('../../../inc/includes.php');
 
+global $DB;
+
 Session::checkRight(Loans::$rightname, Loans::RETURN_LOAN);
 
 if (isset($_POST["search_item"])) { // Handle the search form
@@ -22,7 +24,6 @@ if (isset($_POST["search_item"])) { // Handle the search form
                 $items = [$items]; // It was a single item, wrap it in an array
             }
 
-            global $DB;
             $loan_table = Loans::getTable();
             $entity = new Entity();
             $allowed_entities = [];
