@@ -5,6 +5,8 @@ use GlpiPlugin\Itemloans\Loans;
 use Html;
 use Session;
 
+global $CFG_GLPI;
+
 // Authenticated users only
 Session::checkLoginUser();
 

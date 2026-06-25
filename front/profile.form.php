@@ -5,6 +5,8 @@ use GlpiPlugin\Itemloans\Loans;
 
 include ('../../../inc/includes.php');
 
+global $CFG_GLPI;
+
 Session::checkLoginAndRedirect();
 
 if (!Session::haveRight('profile', UPDATE)) {
